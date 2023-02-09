@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import axios from "axios";
 import env from "./env";
 import pkg from "../package.json";
+import { execSync } from "child_process";
 
 interface NotificationOptions {
   title: string;
@@ -16,6 +17,7 @@ interface PushPlusOptions extends NotificationOptions {}
 interface WeComOptions extends NotificationOptions {}
 interface WeiXinOptions extends WeComOptions {}
 interface FeiShuOptions extends NotificationOptions {}
+interface CommandOptions extends NotificationOptions {}
 
 export class NotificationKit {
   /**
@@ -227,6 +229,16 @@ export class NotificationKit {
     return this.wecomWebhook(options);
   }
 
+  async cmd(options: CommandOptions) {
+    const command: string | unknown = env.CMD;
+    if (!command || command === "") {
+      throw new Error("未配置CMD。");
+    }
+
+    const message = `${options.title}\n${options.content}`
+    execSync(`${command} ${Buffer.from(message, 'utf8').toString('base64')}`)
+  }
+
   newVersion = {
     has: false,
     name: pkg.version,
@@ -263,6 +275,7 @@ export class NotificationKit {
     await trycatch("PushPlus", this.pushplus.bind(this));
     await trycatch("Server酱", this.serverPush.bind(this));
     await trycatch("飞书", this.feishuWebhook.bind(this));
+    await trycatch("Command", this.cmd.bind(this));
   }
 }
 
